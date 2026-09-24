@@ -1,5 +1,5 @@
 import map.MapLoader;
-import ui.MenuScreen;
+import ui.GamePanel;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -15,7 +15,7 @@ public class Main {
         JPanel screens = new JPanel(cards);
 
         MapLoader map = new MapLoader();
-        MenuScreen menu = new MenuScreen(() -> {
+        GamePanel menu = new GamePanel(() -> {
             cards.show(screens, "map");
             map.requestFocusInWindow();
         });

@@ -4,15 +4,10 @@ import java.awt.*;
 import javax.swing.*;
 
 public class MenuScreen extends JPanel {
-    private int rowCount = 21;
-    private int columnCount = 19;
-    private int tilesize = 32;
-    private int boardWidth = columnCount * tilesize;
-    private int boardHeight = rowCount * tilesize;
 
     public MenuScreen(Runnable onPlay) {
-        setPreferredSize(new Dimension(boardWidth, boardHeight));
-        setBackground(Color.YELLOW);
+        // Transparent so the GamePanel background shows through
+        setOpaque(false);
         setLayout(new GridBagLayout());
 
         JLabel title = new JLabel("PAC-MAN");
