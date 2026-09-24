@@ -1,7 +1,16 @@
 package map;
 
+<<<<<<< HEAD
 import entities.Fruit;
 import entities.Pellet;
+=======
+import entities.ghosts.Blinky;
+import entities.ghosts.Clyde;
+import entities.ghosts.Ghost;
+import entities.ghosts.Inky;
+import entities.ghosts.Pinky;
+
+>>>>>>> d9d000c657cc4b3ade096d45c9289603c4a7b8fe
 
 import javax.swing.*;
 import java.awt.*;
@@ -40,6 +49,11 @@ public class MapLoader extends JPanel {
     HashSet<Pellet> pellets = new HashSet<>();
     List<Fruit> fruits;
 
+    Blinky blinky;
+    Pinky pinky;
+    Inky inky;
+    Clyde clyde;
+
     String[] tileMap = {
             "XXXXXXXXXXXXXXXXXXX",
             "X        X        X",
@@ -77,6 +91,12 @@ public class MapLoader extends JPanel {
 
 
         loadMap();
+
+    blinky = new Blinky(288, 288);
+    pinky = new Pinky(320, 288);
+    inky = new Inky(352, 288);
+    clyde = new Clyde(384, 288);
+
     }
 
     public void loadMap() {
@@ -123,25 +143,24 @@ public class MapLoader extends JPanel {
     }
 
     @Override
-    protected void paintComponent(Graphics g) {
+protected void paintComponent(Graphics g) {
 
-        super.paintComponent(g);
+    super.paintComponent(g);
 
-        for (Block wall : walls) {
+    for (Block wall : walls) {
 
-            if (wall.image == null) {
-                g.setColor(new Color(30, 90, 200));
-                g.fillRect(wall.x, wall.y, wall.width, wall.height);
-            } else {
-                g.drawImage(
-                        wall.image,
-                        wall.x,
-                        wall.y,
-                        wall.width,
-                        wall.height,
-                        null
-                );
-            }
+        if (wall.image == null) {
+            g.setColor(new Color(30, 90, 200));
+            g.fillRect(wall.x, wall.y, wall.width, wall.height);
+        } else {
+            g.drawImage(
+                    wall.image,
+                    wall.x,
+                    wall.y,
+                    wall.width,
+                    wall.height,
+                    null
+            );
         }
 
         for (Pellet pellet : pellets) {
@@ -152,6 +171,24 @@ public class MapLoader extends JPanel {
             fruit.draw(g);
         }
     }
+
+    drawGhost(g, blinky, Color.RED);
+    drawGhost(g, pinky, Color.PINK);
+    drawGhost(g, inky, Color.CYAN);
+    drawGhost(g, clyde, Color.ORANGE);
+}
+
+private void drawGhost(Graphics g, Ghost ghost, Color color) {
+
+    g.setColor(color);
+
+    g.fillOval(
+            ghost.getX(),
+            ghost.getY(),
+            20,
+            20
+    );
+}
 
     public static void main(String[] args) {
 
