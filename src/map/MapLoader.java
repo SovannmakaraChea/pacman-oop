@@ -1,11 +1,13 @@
 package map;
 
+import entities.Fruit;
 import entities.Pellet;
 
 import javax.swing.*;
 import java.awt.*;
 import java.net.URL;
 import java.util.HashSet;
+import java.util.List;
 
 public class MapLoader extends JPanel {
 
@@ -36,6 +38,7 @@ public class MapLoader extends JPanel {
 
     HashSet<Block> walls = new HashSet<>();
     HashSet<Pellet> pellets = new HashSet<>();
+    List<Fruit> fruits;
 
     String[] tileMap = {
             "XXXXXXXXXXXXXXXXXXX",
@@ -80,6 +83,7 @@ public class MapLoader extends JPanel {
 
         walls.clear();
         pellets.clear();
+        fruits = Fruit.createCornerCherries(tileSize);
 
         for (int r = 0; r < rowCount ;r++) {
 
@@ -101,12 +105,21 @@ public class MapLoader extends JPanel {
                     );
 
                     walls.add(wall);
-                } else if (tileMapChar == ' ') {
+                } else if (tileMapChar == ' ' && !hasFruitAt(r, c)) {
                     // Pellet is 4x4, so offset by 14 to center it in the 32px tile
                     pellets.add(new Pellet(x + 14, y + 14));
                 }
             }
         }
+    }
+
+    private boolean hasFruitAt(int row, int col) {
+        for (Fruit fruit : fruits) {
+            if (fruit.getTileX() == col && fruit.getTileY() == row) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
@@ -133,6 +146,10 @@ public class MapLoader extends JPanel {
 
         for (Pellet pellet : pellets) {
             pellet.draw(g);
+        }
+
+        for (Fruit fruit : fruits) {
+            fruit.draw(g);
         }
     }
 

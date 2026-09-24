@@ -1,10 +1,13 @@
 package entities;
 
 import java.awt.Color;
-import java.awt.Graphics2D;
+import java.awt.Graphics;
+import java.awt.Image;
 import java.awt.Rectangle;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import javax.swing.ImageIcon;
 
 public class Fruit {
     private int x;
@@ -14,6 +17,7 @@ public class Fruit {
     private int tileSize;
     private boolean isEaten;
     private static final int SCARE_DURATION_MS = 15000;
+    private static final Image CHERRY_IMAGE = loadCherryImage();
 
     public Fruit(int tileX, int tileY, int tileSize) {
         this.tileX = tileX;
@@ -26,15 +30,28 @@ public class Fruit {
 
     public static List<Fruit> createCornerCherries(int tileSize) {
         List<Fruit> cherries = new ArrayList<>();
-        cherries.add(new Fruit(1, 3, tileSize));   // Top-Left
-        cherries.add(new Fruit(26, 3, tileSize));  // Top-Right
-        cherries.add(new Fruit(1, 23, tileSize));  // Bottom-Left
-        cherries.add(new Fruit(26, 23, tileSize)); // Bottom-Right
+        // Map is 19 x 21 tiles, so these are the open tiles in each corner
+        cherries.add(new Fruit(1, 1, tileSize));   // Top-Left
+        cherries.add(new Fruit(17, 1, tileSize));  // Top-Right
+        cherries.add(new Fruit(1, 19, tileSize));  // Bottom-Left
+        cherries.add(new Fruit(17, 19, tileSize)); // Bottom-Right
         return cherries;
     }
 
-    public void draw(Graphics2D g) {
+    private static Image loadCherryImage() {
+        URL cherryResource = Fruit.class.getResource("/images/items/cherry.png");
+        return cherryResource == null ? null : new ImageIcon(cherryResource).getImage();
+    }
+
+    public void draw(Graphics g) {
         if (isEaten) return;
+
+        if (CHERRY_IMAGE != null) {
+            g.drawImage(CHERRY_IMAGE, x, y, tileSize, tileSize, null);
+            return;
+        }
+
+        // Fallback if cherry.png can't be found: draw the cherry by hand
 
         int centerX = x + tileSize / 2;
         int centerY = y + tileSize / 2;
@@ -63,6 +80,8 @@ public class Fruit {
         return false;
     }
 
+    public int getTileX() { return tileX; }
+    public int getTileY() { return tileY; }
     public boolean isEaten() { return isEaten; }
     public int getScareDurationMs() { return SCARE_DURATION_MS; }
 }
