@@ -1,23 +1,32 @@
+import map.MapLoader;
 import ui.GamePanel;
 
 import javax.swing.JFrame;
+import javax.swing.JPanel;
+import java.awt.CardLayout;
+
 public class Main {
     public static void main(String[] args) {
-        int rowCount = 21;
-        int columnCount = 19;
-        int tilesize = 32;
-        int boardWidth = columnCount = tilesize;
-        int boardHeight = rowCount = tilesize;
-
         JFrame frame = new JFrame("Pac Man");
-        frame.setVisible(true);
-        frame.setSize(boardWidth, boardHeight);
-        frame.setLocationRelativeTo(null);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        GamePanel pacmanGame = new GamePanel();
-        frame.add(pacmanGame);
+        // CardLayout lets us swap between the menu and the map in the same window
+        CardLayout cards = new CardLayout();
+        JPanel screens = new JPanel(cards);
+
+        MapLoader map = new MapLoader();
+        GamePanel menu = new GamePanel(() -> {
+            cards.show(screens, "map");
+            map.requestFocusInWindow();
+        });
+
+        screens.add(menu, "menu");
+        screens.add(map, "map");
+
+        frame.add(screens);
         frame.pack();
+        frame.setResizable(false);
+        frame.setLocationRelativeTo(null);
         frame.setVisible(true);
     }
 }
