@@ -1,7 +1,23 @@
-//TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
-// click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
+import ui.GamePanel;
+
+import javax.swing.JFrame;
 public class Main {
     public static void main(String[] args) {
-        System.out.println("Hello");
+        int rowCount = 21;
+        int columnCount = 19;
+        int tilesize = 32;
+        int boardWidth = columnCount = tilesize;
+        int boardHeight = rowCount = tilesize;
+
+        JFrame frame = new JFrame("Pac Man");
+        frame.setVisible(true);
+        frame.setSize(boardWidth, boardHeight);
+        frame.setLocationRelativeTo(null);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+        GamePanel pacmanGame = new GamePanel();
+        frame.add(pacmanGame);
+        frame.pack();
+        frame.setVisible(true);
     }
 }
