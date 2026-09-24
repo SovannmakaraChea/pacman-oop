@@ -1,5 +1,12 @@
 package map;
 
+import entities.ghosts.Blinky;
+import entities.ghosts.Clyde;
+import entities.ghosts.Ghost;
+import entities.ghosts.Inky;
+import entities.ghosts.Pinky;
+
+
 import javax.swing.*;
 import java.awt.*;
 import java.net.URL;
@@ -33,6 +40,11 @@ public class MapLoader extends JPanel {
     Image wallImage;
 
     HashSet<Block> walls = new HashSet<>();
+
+    Blinky blinky;
+    Pinky pinky;
+    Inky inky;
+    Clyde clyde;
 
     String[] tileMap = {
             "XXXXXXXXXXXXXXXXXXX",
@@ -71,6 +83,12 @@ public class MapLoader extends JPanel {
 
 
         loadMap();
+
+    blinky = new Blinky(288, 288);
+    pinky = new Pinky(320, 288);
+    inky = new Inky(352, 288);
+    clyde = new Clyde(384, 288);
+
     }
 
     public void loadMap() {
@@ -103,27 +121,44 @@ public class MapLoader extends JPanel {
     }
 
     @Override
-    protected void paintComponent(Graphics g) {
+protected void paintComponent(Graphics g) {
 
-        super.paintComponent(g);
+    super.paintComponent(g);
 
-        for (Block wall : walls) {
+    for (Block wall : walls) {
 
-            if (wall.image == null) {
-                g.setColor(new Color(30, 90, 200));
-                g.fillRect(wall.x, wall.y, wall.width, wall.height);
-            } else {
-                g.drawImage(
-                        wall.image,
-                        wall.x,
-                        wall.y,
-                        wall.width,
-                        wall.height,
-                        null
-                );
-            }
+        if (wall.image == null) {
+            g.setColor(new Color(30, 90, 200));
+            g.fillRect(wall.x, wall.y, wall.width, wall.height);
+        } else {
+            g.drawImage(
+                    wall.image,
+                    wall.x,
+                    wall.y,
+                    wall.width,
+                    wall.height,
+                    null
+            );
         }
     }
+
+    drawGhost(g, blinky, Color.RED);
+    drawGhost(g, pinky, Color.PINK);
+    drawGhost(g, inky, Color.CYAN);
+    drawGhost(g, clyde, Color.ORANGE);
+}
+
+private void drawGhost(Graphics g, Ghost ghost, Color color) {
+
+    g.setColor(color);
+
+    g.fillOval(
+            ghost.getX(),
+            ghost.getY(),
+            20,
+            20
+    );
+}
 
     public static void main(String[] args) {
 
