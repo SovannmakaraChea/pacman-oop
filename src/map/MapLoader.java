@@ -1,5 +1,7 @@
 package map;
 
+import entities.Pellet;
+
 import javax.swing.*;
 import java.awt.*;
 import java.net.URL;
@@ -33,6 +35,7 @@ public class MapLoader extends JPanel {
     Image wallImage;
 
     HashSet<Block> walls = new HashSet<>();
+    HashSet<Pellet> pellets = new HashSet<>();
 
     String[] tileMap = {
             "XXXXXXXXXXXXXXXXXXX",
@@ -76,6 +79,7 @@ public class MapLoader extends JPanel {
     public void loadMap() {
 
         walls.clear();
+        pellets.clear();
 
         for (int r = 0; r < rowCount ;r++) {
 
@@ -97,6 +101,9 @@ public class MapLoader extends JPanel {
                     );
 
                     walls.add(wall);
+                } else if (tileMapChar == ' ') {
+                    // Pellet is 4x4, so offset by 14 to center it in the 32px tile
+                    pellets.add(new Pellet(x + 14, y + 14));
                 }
             }
         }
@@ -122,6 +129,10 @@ public class MapLoader extends JPanel {
                         null
                 );
             }
+        }
+
+        for (Pellet pellet : pellets) {
+            pellet.draw(g);
         }
     }
 
