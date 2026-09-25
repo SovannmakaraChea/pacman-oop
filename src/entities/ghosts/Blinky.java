@@ -12,7 +12,7 @@ public class Blinky extends Ghost {
         super(
                 x,
                 y,
-                2,
+                4,
                 "Blinky",
                 17,
                 1

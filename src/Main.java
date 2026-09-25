@@ -17,6 +17,7 @@ public class Main {
         MapLoader map = new MapLoader();
         GamePanel menu = new GamePanel(() -> {
             cards.show(screens, "map");
+            map.startGhosts();
             map.requestFocusInWindow();
         });
 

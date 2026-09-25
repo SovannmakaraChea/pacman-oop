@@ -14,7 +14,7 @@ public class Inky extends Ghost {
         super(
                 x,
                 y,
-                2,
+                4,
                 "Inky",
                 17,
                 19

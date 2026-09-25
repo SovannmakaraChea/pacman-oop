@@ -12,7 +12,7 @@ public class Clyde extends Ghost {
         super(
                 x,
                 y,
-                2,
+                4,
                 "Clyde",
                 1,
                 19
