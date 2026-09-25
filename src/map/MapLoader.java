@@ -1,6 +1,7 @@
 package map;
 
 import entities.Fruit;
+import entities.PacMan;
 import entities.Pellet;
 import entities.ghosts.Blinky;
 import entities.ghosts.Clyde;
@@ -10,10 +11,15 @@ import entities.ghosts.Pinky;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.net.URL;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import ai.GhostMode;
+import game.ScoreManager;
+import input.KeyHandler;
 import utils.Direction;
 
 public class MapLoader extends JPanel {
@@ -63,10 +69,10 @@ public class MapLoader extends JPanel {
     Inky inky;
     Clyde clyde;
 
-    // Ghost update timer. 16ms is about 60 frames a second; with a ghost
+    // Game update timer. 16ms is about 60 frames a second; with a
     // speed of 2px that is 125px (about 4 tiles) a second.
     static final int TICK_MS = 16;
-    Timer ghostTimer;
+    Timer gameTimer;
 
     // Ghosts take turns: scatter to their own corners (two at the top,
     // two at the bottom), then chase Pac-Man, then repeat.
@@ -75,11 +81,27 @@ public class MapLoader extends JPanel {
     GhostMode waveMode = GhostMode.SCATTER;
     int waveTicks = 0;
 
-    // Where the ghosts chase. There is no Pac-Man yet, so this starts
-    // on his spawn tile; Pac-Man's code should call setPacman() each move.
-    int pacmanX = 9 * tileSize;
-    int pacmanY = 15 * tileSize;
-    Direction pacmanDirection = Direction.LEFT;
+    // Pac-Man starts on the open tile under the ghost house.
+    PacMan pacman;
+
+    // Game state
+    ScoreManager scoreManager = new ScoreManager();
+    boolean gameOver = false;
+    boolean won = false;
+
+    // A new game waits on READY until the player presses a key or clicks.
+    boolean waitingToStart = true;
+
+    // After a death everyone stands still for 2 seconds.
+    static final int READY_TICKS = 2000 / TICK_MS;
+    int readyTicks = READY_TICKS;
+
+    // Eating a cherry frightens the ghosts for a while.
+    int frightenedTicks = 0;
+    int ghostsEatenThisFright = 0;
+
+    // Extra strip under the maze for the score and lives.
+    static final int HUD_HEIGHT = 32;
 
     String[] tileMap = {
             "XXXXXXXXXXXXXXXXXXX",
@@ -108,10 +130,13 @@ public class MapLoader extends JPanel {
     public MapLoader() {
 
         setPreferredSize(
-                new Dimension(boardWidth, boardHeight)
+                new Dimension(boardWidth, boardHeight + HUD_HEIGHT)
         );
 
         setBackground(Color.BLACK);
+
+        // Needed so the arrow keys reach this panel
+        setFocusable(true);
 
         // Load wall image
         URL wallResource =
@@ -162,26 +187,209 @@ public class MapLoader extends JPanel {
             ghost.setMode(waveMode);
         }
 
-        // Start Ghost movement
-        ghostTimer = new Timer(TICK_MS, e -> {
+        // Create Pac-Man and listen for the arrow keys
+        pacman = new PacMan(9 * tileSize, 15 * tileSize);
+        addKeyListener(new KeyHandler(pacman, this::startPlaying, this::restart));
 
-            updateWave();
-
-            for (Ghost ghost : ghosts()) {
-                ghost.updateAI(
-                        tileMap,
-                        tileSize,
-                        pacmanX,
-                        pacmanY,
-                        pacmanDirection,
-                        wallBounds
-                );
+        // Clicking the board also starts the game
+        addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                startPlaying();
             }
-
-            repaint();
         });
 
-        ghostTimer.start();
+        // Game loop. It is started by startGhosts() when PLAY is pressed,
+        // so nothing moves while the menu is showing.
+        gameTimer = new Timer(TICK_MS, e -> {
+            updateGame();
+            repaint();
+        });
+    }
+
+    // One tick of the game: move everyone, then check what got eaten.
+    void updateGame() {
+
+        if (gameOver || won || waitingToStart) {
+            return;
+        }
+
+        if (readyTicks > 0) {
+            readyTicks--;
+            return;
+        }
+
+        pacman.update(tileMap, tileSize);
+        eatPellets();
+        eatFruit();
+
+        // The scatter/chase clock pauses while the ghosts are frightened.
+        if (frightenedTicks > 0) {
+            updateFrightened();
+        } else {
+            updateWave();
+        }
+
+        for (Ghost ghost : ghosts()) {
+            ghost.updateAI(
+                    tileMap,
+                    tileSize,
+                    pacman.getX(),
+                    pacman.getY(),
+                    pacman.getDirection(),
+                    wallBounds
+            );
+        }
+
+        checkGhostCollisions();
+
+        if (pellets.isEmpty() && allFruitEaten()) {
+            won = true;
+        }
+    }
+
+    void eatPellets() {
+
+        Rectangle pacmanBounds = pacman.getBounds();
+        Iterator<Pellet> it = pellets.iterator();
+
+        while (it.hasNext()) {
+            Pellet pellet = it.next();
+            if (pacmanBounds.intersects(pellet.getBounds())) {
+                scoreManager.addPoints(pellet.getScoreValue());
+                it.remove();
+            }
+        }
+    }
+
+    // The corner cherries are the power pellets: they frighten the ghosts.
+    void eatFruit() {
+
+        for (Fruit fruit : fruits) {
+            if (fruit.checkCollision(pacman.getBounds())) {
+                scoreManager.addPoints(ScoreManager.FRUIT_POINTS);
+                frightenGhosts(fruit.getScareDurationMs());
+            }
+        }
+    }
+
+    boolean allFruitEaten() {
+        for (Fruit fruit : fruits) {
+            if (!fruit.isEaten()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    void frightenGhosts(int durationMs) {
+
+        frightenedTicks = durationMs / TICK_MS;
+        ghostsEatenThisFright = 0;
+
+        for (Ghost ghost : ghosts()) {
+            if (ghost.getMode() != GhostMode.DEAD) {
+                ghost.setMode(GhostMode.FRIGHTENED);
+            }
+        }
+    }
+
+    // Count down the fright; when it ends the ghosts go back to the wave.
+    void updateFrightened() {
+
+        frightenedTicks--;
+
+        if (frightenedTicks > 0) {
+            return;
+        }
+
+        for (Ghost ghost : ghosts()) {
+            if (ghost.getMode() == GhostMode.FRIGHTENED) {
+                ghost.setMode(waveMode);
+            }
+        }
+    }
+
+    // Touching a frightened ghost eats it (it goes back home);
+    // touching any other ghost costs Pac-Man a life.
+    void checkGhostCollisions() {
+
+        int half = tileSize / 2;
+
+        for (Ghost ghost : ghosts()) {
+
+            boolean touching =
+                    Math.abs(ghost.getX() - pacman.getX()) < half
+                    && Math.abs(ghost.getY() - pacman.getY()) < half;
+
+            if (!touching) {
+                continue;
+            }
+
+            if (ghost.getMode() == GhostMode.FRIGHTENED) {
+
+                ghostsEatenThisFright++;
+                scoreManager.addGhostPoints(ghostsEatenThisFright);
+
+                ghost.reset();
+                ghost.setMode(waveMode);
+
+            } else if (ghost.getMode() != GhostMode.DEAD) {
+
+                pacman.loseLife();
+
+                if (pacman.getLives() <= 0) {
+                    gameOver = true;
+                } else {
+                    resetPositions();
+                }
+                return;
+            }
+        }
+    }
+
+    // After a death: Pac-Man and the ghosts go back to where they started.
+    void resetPositions() {
+
+        pacman.reset();
+
+        for (Ghost ghost : ghosts()) {
+            ghost.reset();
+            ghost.setMode(waveMode);
+        }
+
+        frightenedTicks = 0;
+        readyTicks = READY_TICKS;
+    }
+
+    // ENTER after game over or a win starts a new game.
+    void restart() {
+
+        if (!gameOver && !won) {
+            return;
+        }
+
+        scoreManager.reset();
+        gameOver = false;
+        won = false;
+        waveMode = GhostMode.SCATTER;
+        waveTicks = 0;
+
+        loadMap();
+        pacman.resetAll();
+        resetPositions();
+        waitingToStart = true;
+    }
+
+    // First key press or mouse click of a game: everyone starts moving.
+    void startPlaying() {
+
+        requestFocusInWindow();
+
+        if (waitingToStart) {
+            waitingToStart = false;
+            readyTicks = 0;
+        }
     }
 
     Ghost[] ghosts() {
@@ -213,12 +421,6 @@ public class MapLoader extends JPanel {
                 ghost.setMode(waveMode);
             }
         }
-    }
-
-    public void setPacman(int x, int y, Direction direction) {
-        pacmanX = x;
-        pacmanY = y;
-        pacmanDirection = direction;
     }
 
     private Image loadImage(String path) {
@@ -343,6 +545,64 @@ public class MapLoader extends JPanel {
         drawGhost(g, pinky);
         drawGhost(g, inky);
         drawGhost(g, clyde);
+
+        // Draw Pac-Man
+        pacman.draw(g);
+
+        drawHud(g);
+    }
+
+    // Score and lives under the maze, plus READY / GAME OVER / YOU WIN.
+    private void drawHud(Graphics g) {
+
+        g.setFont(new Font("Arial", Font.BOLD, 18));
+        g.setColor(Color.WHITE);
+        g.drawString("SCORE: " + scoreManager.getScore(), 10, boardHeight + 22);
+        drawCentered(g, "HIGH: " + scoreManager.getHighScore(), boardHeight + 22);
+
+        // One small Pac-Man for each life left
+        g.setColor(Color.YELLOW);
+        for (int i = 0; i < pacman.getLives(); i++) {
+            g.fillArc(boardWidth - 30 - i * 26, boardHeight + 6, 20, 20, 225, 270);
+        }
+
+        String message = null;
+        Color color = Color.YELLOW;
+
+        if (gameOver) {
+            message = "GAME OVER";
+            color = Color.RED;
+        } else if (won) {
+            message = "YOU WIN!";
+        } else if (readyTicks > 0) {
+            message = "READY!";
+        }
+
+        if (message == null) {
+            return;
+        }
+
+        // Row 11 of the maze is an open strip in the middle of the board
+        int textY = 11 * tileSize + 24;
+
+        g.setFont(new Font("Arial", Font.BOLD, 26));
+        g.setColor(color);
+        drawCentered(g, message, textY);
+
+        if (gameOver || won) {
+            g.setFont(new Font("Arial", Font.BOLD, 14));
+            g.setColor(Color.WHITE);
+            drawCentered(g, "Press ENTER to play again", 13 * tileSize + 22);
+        } else if (waitingToStart) {
+            g.setFont(new Font("Arial", Font.BOLD, 14));
+            g.setColor(Color.WHITE);
+            drawCentered(g, "Press any key or click to start", 13 * tileSize + 22);
+        }
+    }
+
+    private void drawCentered(Graphics g, String text, int y) {
+        int width = g.getFontMetrics().stringWidth(text);
+        g.drawString(text, (boardWidth - width) / 2, y);
     }
 
     private void drawGhost(
@@ -377,17 +637,17 @@ public class MapLoader extends JPanel {
 
     public void stopGhosts() {
 
-        if (ghostTimer != null) {
-            ghostTimer.stop();
+        if (gameTimer != null) {
+            gameTimer.stop();
         }
     }
 
     public void startGhosts() {
 
-        if (ghostTimer != null
-                && !ghostTimer.isRunning()) {
+        if (gameTimer != null
+                && !gameTimer.isRunning()) {
 
-            ghostTimer.start();
+            gameTimer.start();
         }
     }
 
@@ -412,5 +672,8 @@ public class MapLoader extends JPanel {
         frame.setResizable(false);
 
         frame.setVisible(true);
+
+        map.startGhosts();
+        map.requestFocusInWindow();
     }
 }
