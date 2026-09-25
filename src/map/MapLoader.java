@@ -1,5 +1,6 @@
 package map;
 
+import entities.Fruit;
 import entities.Pellet;
 import entities.ghosts.Blinky;
 import entities.ghosts.Clyde;
@@ -11,6 +12,9 @@ import javax.swing.*;
 import java.awt.*;
 import java.net.URL;
 import java.util.HashSet;
+import java.util.List;
+import ai.GhostMode;
+import utils.Direction;
 
 public class MapLoader extends JPanel {
 
@@ -51,6 +55,7 @@ public class MapLoader extends JPanel {
     HashSet<Block> walls = new HashSet<>();
     HashSet<Pellet> pellets = new HashSet<>();
     HashSet<Rectangle> wallBounds = new HashSet<>();
+    List<Fruit> fruits;
 
     // Ghosts
     Blinky blinky;
@@ -58,8 +63,23 @@ public class MapLoader extends JPanel {
     Inky inky;
     Clyde clyde;
 
-    // Ghost update timer
+    // Ghost update timer. 16ms is about 60 frames a second; with a ghost
+    // speed of 2px that is 125px (about 4 tiles) a second.
+    static final int TICK_MS = 16;
     Timer ghostTimer;
+
+    // Ghosts take turns: scatter to their own corners (two at the top,
+    // two at the bottom), then chase Pac-Man, then repeat.
+    static final int SCATTER_TICKS = 7000 / TICK_MS;
+    static final int CHASE_TICKS = 10000 / TICK_MS;
+    GhostMode waveMode = GhostMode.SCATTER;
+    int waveTicks = 0;
+
+    // Where the ghosts chase. There is no Pac-Man yet, so this starts
+    // on his spawn tile; Pac-Man's code should call setPacman() each move.
+    int pacmanX = 9 * tileSize;
+    int pacmanY = 15 * tileSize;
+    Direction pacmanDirection = Direction.LEFT;
 
     String[] tileMap = {
             "XXXXXXXXXXXXXXXXXXX",
@@ -119,6 +139,8 @@ public class MapLoader extends JPanel {
         inky = new Inky(352, 288);
         clyde = new Clyde(384, 288);
 
+        inky.setBlinky(blinky);
+
         // Give Ghosts their images
         blinky.setNormalImage(blinkyImage);
         pinky.setNormalImage(pinkyImage);
@@ -131,23 +153,72 @@ public class MapLoader extends JPanel {
         clyde.setFrightenedImage(scaredGhostImage);
 
         // Start with different directions
-        blinky.setDirection(utils.Direction.RIGHT);
-        pinky.setDirection(utils.Direction.LEFT);
-        inky.setDirection(utils.Direction.DOWN);
-        clyde.setDirection(utils.Direction.UP);
+        blinky.setDirection(Direction.RIGHT);
+        pinky.setDirection(Direction.LEFT);
+        inky.setDirection(Direction.DOWN);
+        clyde.setDirection(Direction.UP);
+
+        for (Ghost ghost : ghosts()) {
+            ghost.setMode(waveMode);
+        }
 
         // Start Ghost movement
-        ghostTimer = new Timer(50, e -> {
+        ghostTimer = new Timer(TICK_MS, e -> {
 
-            blinky.move(wallBounds);
-            pinky.move(wallBounds);
-            inky.move(wallBounds);
-            clyde.move(wallBounds);
+            updateWave();
+
+            for (Ghost ghost : ghosts()) {
+                ghost.updateAI(
+                        tileMap,
+                        tileSize,
+                        pacmanX,
+                        pacmanY,
+                        pacmanDirection,
+                        wallBounds
+                );
+            }
 
             repaint();
         });
 
         ghostTimer.start();
+    }
+
+    Ghost[] ghosts() {
+        return new Ghost[]{blinky, pinky, inky, clyde};
+    }
+
+    // Switch every ghost between SCATTER and CHASE when the wave runs out.
+    // Frightened or dead ghosts are left alone.
+    void updateWave() {
+
+        waveTicks++;
+
+        int waveLength = waveMode == GhostMode.SCATTER
+                ? SCATTER_TICKS
+                : CHASE_TICKS;
+
+        if (waveTicks < waveLength) {
+            return;
+        }
+
+        waveTicks = 0;
+        waveMode = waveMode == GhostMode.SCATTER
+                ? GhostMode.CHASE
+                : GhostMode.SCATTER;
+
+        for (Ghost ghost : ghosts()) {
+            if (ghost.getMode() == GhostMode.SCATTER
+                    || ghost.getMode() == GhostMode.CHASE) {
+                ghost.setMode(waveMode);
+            }
+        }
+    }
+
+    public void setPacman(int x, int y, Direction direction) {
+        pacmanX = x;
+        pacmanY = y;
+        pacmanDirection = direction;
     }
 
     private Image loadImage(String path) {
@@ -167,6 +238,7 @@ public class MapLoader extends JPanel {
         walls.clear();
         pellets.clear();
         wallBounds.clear();
+        fruits = Fruit.createCornerCherries(tileSize);
 
         for (int r = 0; r < rowCount; r++) {
 
@@ -200,7 +272,7 @@ public class MapLoader extends JPanel {
                             )
                     );
 
-                } else if (tileMapChar == ' ') {
+                } else if (tileMapChar == ' ' && !hasFruitAt(r, c)) {
 
                     pellets.add(
                             new Pellet(
@@ -211,6 +283,15 @@ public class MapLoader extends JPanel {
                 }
             }
         }
+    }
+
+    private boolean hasFruitAt(int row, int col) {
+        for (Fruit fruit : fruits) {
+            if (fruit.getTileX() == col && fruit.getTileY() == row) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
@@ -250,6 +331,11 @@ public class MapLoader extends JPanel {
         // Draw pellets
         for (Pellet pellet : pellets) {
             pellet.draw(g);
+        }
+
+        // Draw fruit
+        for (Fruit fruit : fruits) {
+            fruit.draw(g);
         }
 
         // Draw Ghosts

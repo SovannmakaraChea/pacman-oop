@@ -7,6 +7,10 @@ import utils.Direction;
 import java.awt.Image;
 import java.awt.Point;
 import java.awt.Rectangle;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
@@ -32,7 +36,11 @@ public abstract class Ghost {
 
     private final Random random = new Random();
 
-    private static final int SIZE = 20;
+    // Same as the map's tile size, so a ghost fills exactly one
+    // corridor tile and its 32px image never overlaps a wall.
+    private static final int SIZE = 32;
+
+    private Pathfinder pathfinder;
 
     protected Ghost(
             int x,
@@ -110,7 +118,11 @@ public abstract class Ghost {
             Set<Rectangle> walls
     ) {
 
-        if (isCentered(tileSize)) {
+        int boardWidth = tileMap[0].length() * tileSize;
+
+        boolean onBoard = x >= 0 && x + SIZE <= boardWidth;
+
+        if (onBoard && isCentered(tileSize)) {
 
             if (mode == GhostMode.FRIGHTENED) {
 
@@ -125,24 +137,42 @@ public abstract class Ghost {
                         tileSize
                 );
 
-                Pathfinder pathfinder =
-                        new Pathfinder(tileMap, tileSize);
+                if (pathfinder == null) {
+                    pathfinder = new Pathfinder(tileMap, tileSize);
+                }
 
                 Direction nextDirection =
                         pathfinder.findDirection(
                                 x,
                                 y,
                                 target.x,
-                                target.y
+                                target.y,
+                                opposite(direction)
                         );
 
                 if (nextDirection != null) {
                     direction = nextDirection;
+                } else {
+                    // Already on the target: keep wandering instead of
+                    // stopping, otherwise the ghost bounces in place.
+                    chooseRandomDirection(walls);
                 }
             }
         }
 
         move(walls);
+
+        wrapThroughTunnel(boardWidth);
+    }
+
+    // Leaving through one side tunnel brings the ghost back in the other side.
+    private void wrapThroughTunnel(int boardWidth) {
+
+        if (x <= -SIZE) {
+            x = boardWidth;
+        } else if (x >= boardWidth) {
+            x = -SIZE;
+        }
     }
 
     protected Point getTarget(
@@ -182,12 +212,20 @@ public abstract class Ghost {
             Set<Rectangle> walls
     ) {
 
-        Direction[] directions = Direction.values();
+        List<Direction> directions =
+                new ArrayList<>(Arrays.asList(Direction.values()));
 
-        for (int attempt = 0; attempt < 10; attempt++) {
+        // Try every direction once, in random order, with turning
+        // back as the last choice (only used at a dead end).
+        Collections.shuffle(directions, random);
 
-            Direction candidate =
-                    directions[random.nextInt(directions.length)];
+        Direction reverse = opposite(direction);
+
+        if (directions.remove(reverse)) {
+            directions.add(reverse);
+        }
+
+        for (Direction candidate : directions) {
 
             int testX = x;
             int testY = y;
@@ -234,6 +272,24 @@ public abstract class Ghost {
                 direction = candidate;
                 return;
             }
+        }
+    }
+
+    private static Direction opposite(Direction direction) {
+
+        if (direction == null) {
+            return null;
+        }
+
+        switch (direction) {
+            case UP:
+                return Direction.DOWN;
+            case DOWN:
+                return Direction.UP;
+            case LEFT:
+                return Direction.RIGHT;
+            default:
+                return Direction.LEFT;
         }
     }
 

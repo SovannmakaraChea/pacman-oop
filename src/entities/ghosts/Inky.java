@@ -7,6 +7,8 @@ import java.awt.Point;
 
 public class Inky extends Ghost {
 
+    private Ghost blinky;
+
     public Inky(int x, int y) {
 
         super(
@@ -21,6 +23,11 @@ public class Inky extends Ghost {
         setMode(GhostMode.CHASE);
     }
 
+    // Inky's chase target depends on where Blinky is.
+    public void setBlinky(Ghost blinky) {
+        this.blinky = blinky;
+    }
+
     @Override
     protected Point getTarget(
             int pacmanX,
@@ -29,7 +36,7 @@ public class Inky extends Ghost {
             int tileSize
     ) {
 
-        if (mode == GhostMode.CHASE) {
+        if (mode == GhostMode.CHASE && blinky != null) {
 
             int aheadX = pacmanX;
             int aheadY = pacmanY;
@@ -53,9 +60,8 @@ public class Inky extends Ghost {
                     break;
             }
 
-            // Use Blinky's position as the second point.
-            int blinkyX = 288;
-            int blinkyY = 288;
+            int blinkyX = blinky.getX();
+            int blinkyY = blinky.getY();
 
             int vectorX = aheadX - blinkyX;
             int vectorY = aheadY - blinkyY;

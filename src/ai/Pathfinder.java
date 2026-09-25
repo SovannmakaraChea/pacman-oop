@@ -25,6 +25,19 @@ public class Pathfinder {
             int targetX,
             int targetY
     ) {
+        return findDirection(startX, startY, targetX, targetY, null);
+    }
+
+    // Same as above, but the first step may not go in the "avoid"
+    // direction. Ghosts pass their reverse direction here so they
+    // never U-turn on the spot.
+    public Direction findDirection(
+            int startX,
+            int startY,
+            int targetX,
+            int targetY,
+            Direction avoid
+    ) {
 
         int startCol = startX / tileSize;
         int startRow = startY / tileSize;
@@ -32,23 +45,12 @@ public class Pathfinder {
         int targetCol = targetX / tileSize;
         int targetRow = targetY / tileSize;
 
-        if (!isInside(startRow, startCol)
-                || !isInside(targetRow, targetCol)) {
-            return null;
-        }
-
         if (!isWalkable(startRow, startCol)) {
             return null;
         }
 
-        // If target is inside a wall, find the nearest walkable tile.
-        Point target = findNearestWalkable(targetRow, targetCol);
-
-        if (target == null) {
-            return null;
-        }
-
         Point start = new Point(startCol, startRow);
+        Point target = new Point(targetCol, targetRow);
 
         if (start.equals(target)) {
             return null;
@@ -61,6 +63,7 @@ public class Pathfinder {
         queue.add(start);
         visited.add(start);
 
+        // Same order as Direction.values(): UP, DOWN, LEFT, RIGHT
         int[][] directions = {
                 {0, -1},   // UP
                 {0, 1},    // DOWN
@@ -72,11 +75,14 @@ public class Pathfinder {
 
             Point current = queue.poll();
 
-            if (current.equals(target)) {
-                break;
-            }
+            for (int i = 0; i < directions.length; i++) {
 
-            for (int[] move : directions) {
+                int[] move = directions[i];
+
+                if (current.equals(start)
+                        && Direction.values()[i] == avoid) {
+                    continue;
+                }
 
                 int nextCol = current.x + move[0];
                 int nextRow = current.y + move[1];
@@ -97,7 +103,14 @@ public class Pathfinder {
             }
         }
 
+        // Target may be off the board, inside a wall or unreachable
+        // (Pinky and Inky aim ahead of Pac-Man), so head for the
+        // reachable tile closest to it instead.
         if (!visited.contains(target)) {
+            target = closestTo(visited, target);
+        }
+
+        if (target.equals(start)) {
             return null;
         }
 
@@ -125,25 +138,22 @@ public class Pathfinder {
                 && tileMap[row].charAt(col) != 'X';
     }
 
-    private Point findNearestWalkable(int row, int col) {
+    private Point closestTo(Set<Point> tiles, Point target) {
 
-        if (isWalkable(row, col)) {
-            return new Point(col, row);
-        }
+        Point best = null;
+        double bestDistance = Double.MAX_VALUE;
 
-        for (int radius = 1; radius <= 4; radius++) {
+        for (Point tile : tiles) {
 
-            for (int r = row - radius; r <= row + radius; r++) {
-                for (int c = col - radius; c <= col + radius; c++) {
+            double distance = tile.distanceSq(target);
 
-                    if (isWalkable(r, c)) {
-                        return new Point(c, r);
-                    }
-                }
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                best = tile;
             }
         }
 
-        return null;
+        return best;
     }
 
     private Direction getDirection(Point start, Point next) {
