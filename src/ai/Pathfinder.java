@@ -13,14 +13,10 @@ public class Pathfinder {
 
     private final String[] tileMap;
     private final int tileSize;
-    private final int rowCount;
-    private final int columnCount;
 
     public Pathfinder(String[] tileMap, int tileSize) {
         this.tileMap = tileMap;
         this.tileSize = tileSize;
-        this.rowCount = tileMap.length;
-        this.columnCount = tileMap[0].length();
     }
 
     public Direction findDirection(
@@ -30,21 +26,29 @@ public class Pathfinder {
             int targetY
     ) {
 
-        // Convert pixel positions to tile positions
         int startCol = startX / tileSize;
         int startRow = startY / tileSize;
 
         int targetCol = targetX / tileSize;
         int targetRow = targetY / tileSize;
 
-        // Invalid positions
-        if (!isWalkable(startRow, startCol)
-                || !isWalkable(targetRow, targetCol)) {
+        if (!isInside(startRow, startCol)
+                || !isInside(targetRow, targetCol)) {
+            return null;
+        }
+
+        if (!isWalkable(startRow, startCol)) {
+            return null;
+        }
+
+        // If target is inside a wall, find the nearest walkable tile.
+        Point target = findNearestWalkable(targetRow, targetCol);
+
+        if (target == null) {
             return null;
         }
 
         Point start = new Point(startCol, startRow);
-        Point target = new Point(targetCol, targetRow);
 
         if (start.equals(target)) {
             return null;
@@ -93,29 +97,53 @@ public class Pathfinder {
             }
         }
 
-        // No path found
-        if (!parent.containsKey(target)) {
+        if (!visited.contains(target)) {
             return null;
         }
 
-        // Walk backwards from target until we reach the start
         Point current = target;
 
-        while (!parent.get(current).equals(start)) {
+        while (parent.containsKey(current)
+                && !parent.get(current).equals(start)) {
             current = parent.get(current);
         }
 
         return getDirection(start, current);
     }
 
+    private boolean isInside(int row, int col) {
+
+        return row >= 0
+                && row < tileMap.length
+                && col >= 0
+                && col < tileMap[row].length();
+    }
+
     private boolean isWalkable(int row, int col) {
 
-        if (row < 0 || row >= rowCount
-                || col < 0 || col >= columnCount) {
-            return false;
+        return isInside(row, col)
+                && tileMap[row].charAt(col) != 'X';
+    }
+
+    private Point findNearestWalkable(int row, int col) {
+
+        if (isWalkable(row, col)) {
+            return new Point(col, row);
         }
 
-        return tileMap[row].charAt(col) != 'X';
+        for (int radius = 1; radius <= 4; radius++) {
+
+            for (int r = row - radius; r <= row + radius; r++) {
+                for (int c = col - radius; c <= col + radius; c++) {
+
+                    if (isWalkable(r, c)) {
+                        return new Point(c, r);
+                    }
+                }
+            }
+        }
+
+        return null;
     }
 
     private Direction getDirection(Point start, Point next) {
