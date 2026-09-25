@@ -1,6 +1,10 @@
 package map;
 
 import entities.Pellet;
+import entities.ghosts.Blinky;
+import entities.ghosts.Clyde;
+import entities.ghosts.Inky;
+import entities.ghosts.Pinky;
 
 import javax.swing.*;
 import java.awt.*;
@@ -36,6 +40,14 @@ public class MapLoader extends JPanel {
 
     HashSet<Block> walls = new HashSet<>();
     HashSet<Pellet> pellets = new HashSet<>();
+    HashSet<Rectangle> wallBounds = new HashSet<>();
+
+    // ghost
+    Blinky blinky;
+    Pinky pinky;
+    Inky inky;
+    Clyde clyde;
+    Timer ghostTimer;
 
     String[] tileMap = {
             "XXXXXXXXXXXXXXXXXXX",
@@ -64,24 +76,32 @@ public class MapLoader extends JPanel {
     public MapLoader() {
 
         setPreferredSize(
-                new Dimension(boardWidth, boardHeight)
-        );
+                new Dimension(boardWidth, boardHeight));
 
         setBackground(Color.BLACK);
 
         URL wallResource = MapLoader.class.getResource("/images/pacman/wall.png");
-        wallImage = wallResource == null ? null : new ImageIcon(wallResource).getImage();
 
+        wallImage = wallResource == null
+                ? null
+                : new ImageIcon(wallResource).getImage();
 
         loadMap();
+
+        // Create ghosts
+        blinky = new Blinky(288, 288);
+        pinky = new Pinky(320, 288);
+        inky = new Inky(352, 288);
+        clyde = new Clyde(384, 288);
     }
 
     public void loadMap() {
 
         walls.clear();
         pellets.clear();
+        wallBounds.clear();
 
-        for (int r = 0; r < rowCount ;r++) {
+        for (int r = 0; r < rowCount; r++) {
 
             for (int c = 0; c < columnCount; c++) {
 
@@ -89,7 +109,6 @@ public class MapLoader extends JPanel {
 
                 int x = c * tileSize;
                 int y = r * tileSize;
-
                 if (tileMapChar == 'X') {
 
                     Block wall = new Block(
@@ -97,11 +116,19 @@ public class MapLoader extends JPanel {
                             x,
                             y,
                             tileSize,
-                            tileSize
-                    );
+                            tileSize);
 
                     walls.add(wall);
+
+                    wallBounds.add(
+                            new Rectangle(
+                                    x,
+                                    y,
+                                    tileSize,
+                                    tileSize));
+
                 } else if (tileMapChar == ' ') {
+
                     // Pellet is 4x4, so offset by 14 to center it in the 32px tile
                     pellets.add(new Pellet(x + 14, y + 14));
                 }
@@ -126,8 +153,7 @@ public class MapLoader extends JPanel {
                         wall.y,
                         wall.width,
                         wall.height,
-                        null
-                );
+                        null);
             }
         }
 
@@ -147,8 +173,7 @@ public class MapLoader extends JPanel {
         frame.pack();
 
         frame.setDefaultCloseOperation(
-                JFrame.EXIT_ON_CLOSE
-        );
+                JFrame.EXIT_ON_CLOSE);
 
         frame.setLocationRelativeTo(null);
 
