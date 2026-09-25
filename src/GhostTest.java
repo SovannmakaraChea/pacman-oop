@@ -9,18 +9,18 @@ public class GhostTest {
     public static void main(String[] args) {
 
         Ghost[] ghosts = {
-            new Blinky(100, 100),
-            new Pinky(120, 100),
-            new Inky(140, 100),
-            new Clyde(160, 100)
+                new Blinky(100, 100),
+                new Pinky(120, 100),
+                new Inky(140, 100),
+                new Clyde(160, 100)
         };
 
         for (Ghost ghost : ghosts) {
 
             System.out.println(
-                ghost.getClass().getSimpleName()
-                + " | X = " + ghost.getX()
-                + " | Y = " + ghost.getY()
+                    ghost.getClass().getSimpleName()
+                    + " | Mode = "
+                    + ghost.getMode()
             );
         }
     }

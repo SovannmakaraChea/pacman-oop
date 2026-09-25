@@ -1,5 +1,6 @@
 package entities.ghosts;
 
+import ai.GhostMode;
 import utils.Direction;
 
 import java.awt.Rectangle;
@@ -20,23 +21,26 @@ public class Ghost {
 
     protected Direction direction;
 
+    protected GhostMode mode;
+
     private final Random random = new Random();
 
     private static final int SIZE = 20;
 
     public Ghost(int x, int y, int speed, String name) {
 
-    this.x = x;
-    this.y = y;
+        this.x = x;
+        this.y = y;
 
-    this.startX = x;
-    this.startY = y;
+        this.startX = x;
+        this.startY = y;
 
-    this.speed = speed;
-    this.name = name;
+        this.speed = speed;
+        this.name = name;
 
-    this.direction = Direction.UP;
-}
+        this.direction = Direction.UP;
+        this.mode = GhostMode.SCATTER;
+    }
 
     public void move() {
 
@@ -66,6 +70,7 @@ public class Ghost {
         y = startY;
 
         direction = Direction.UP;
+        mode = GhostMode.SCATTER;
     }
 
     public int getX() {
@@ -80,17 +85,19 @@ public class Ghost {
         return speed;
     }
 
+    public String getName() {
+        return name;
+    }
+
     public Direction getDirection() {
         return direction;
     }
 
     protected Rectangle getBounds() {
-
         return new Rectangle(x, y, SIZE, SIZE);
     }
 
     public void setDirection(Direction direction) {
-
         this.direction = direction;
     }
 
@@ -99,6 +106,14 @@ public class Ghost {
         Direction[] directions = Direction.values();
 
         direction = directions[random.nextInt(directions.length)];
+    }
+
+    public GhostMode getMode() {
+        return mode;
+    }
+
+    public void setMode(GhostMode mode) {
+        this.mode = mode;
     }
 
     public void move(Set<Rectangle> walls) {
