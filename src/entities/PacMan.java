@@ -17,15 +17,11 @@ public class PacMan {
     private final int startX;
     private final int startY;
 
-    // 2px a tick, same as the ghosts. It divides the 32px tile evenly,
-    // so Pac-Man always lands exactly on a tile centre where he can turn.
     private final int speed = 4;
 
     private static final int SIZE = 32;
     private static final int START_LIVES = 3;
 
-    // direction = where he is going now; nextDirection = the key the
-    // player pressed last. He turns as soon as that way is open.
     private Direction direction = Direction.LEFT;
     private Direction nextDirection = Direction.LEFT;
     private boolean moving = true;
@@ -49,7 +45,6 @@ public class PacMan {
         int boardWidth = tileMap[0].length() * tileSize;
         boolean onBoard = x >= 0 && x + SIZE <= boardWidth;
 
-        // Turning back is allowed at any time, like the arcade game.
         if (nextDirection == opposite(direction)) {
             direction = nextDirection;
             moving = true;
@@ -81,7 +76,6 @@ public class PacMan {
             }
         }
 
-        // Leaving through one side tunnel brings him back in the other side.
         if (x <= -SIZE) {
             x = boardWidth;
         } else if (x >= boardWidth) {
@@ -89,7 +83,6 @@ public class PacMan {
         }
     }
 
-    // Is the next tile in this direction open? Only called on a tile centre.
     private boolean canMove(Direction dir, String[] tileMap, int tileSize) {
 
         int col = x / tileSize;
@@ -114,7 +107,6 @@ public class PacMan {
             return false;
         }
 
-        // Off the side of the map is the tunnel, so it counts as open.
         if (col < 0 || col >= tileMap[row].length()) {
             return true;
         }
@@ -158,7 +150,6 @@ public class PacMan {
             return;
         }
 
-        // Fallback if the image can't be found: a yellow circle with a mouth
         int startAngle;
         switch (direction) {
             case UP:
@@ -182,7 +173,6 @@ public class PacMan {
         return resource == null ? null : new ImageIcon(resource).getImage();
     }
 
-    // Back to the start tile after losing a life.
     public void reset() {
         x = startX;
         y = startY;
@@ -191,7 +181,6 @@ public class PacMan {
         moving = true;
     }
 
-    // New game: start tile and full lives.
     public void resetAll() {
         reset();
         lives = START_LIVES;

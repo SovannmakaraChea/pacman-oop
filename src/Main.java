@@ -10,7 +10,6 @@ public class Main {
         JFrame frame = new JFrame("Pac Man");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        // CardLayout lets us swap between the menu and the map in the same window
         CardLayout cards = new CardLayout();
         JPanel screens = new JPanel(cards);
 
@@ -29,5 +28,6 @@ public class Main {
         frame.setResizable(false);
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
+        map.playMenuMusic();
     }
 }

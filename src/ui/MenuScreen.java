@@ -11,7 +11,6 @@ public class MenuScreen extends JPanel {
     private static final Color SHADOW = new Color(200, 120, 0);
 
     public MenuScreen(Runnable onPlay) {
-        // Transparent so the GamePanel background shows through
         setOpaque(false);
         setLayout(new GridBagLayout());
 
@@ -35,7 +34,6 @@ public class MenuScreen extends JPanel {
         add(new Subtitle("EAT A CHERRY TO SCARE THE GHOSTS"), gbc);
     }
 
-    // "PAC-MAN" in big black letters with an orange drop shadow.
     private static class Title extends JComponent {
 
         private static final String TEXT = "PAC-MAN";
@@ -64,7 +62,6 @@ public class MenuScreen extends JPanel {
         }
     }
 
-    // Small spaced-out capitals, used for the controls hint.
     private static class Subtitle extends JLabel {
 
         Subtitle(String text) {
@@ -82,8 +79,6 @@ public class MenuScreen extends JPanel {
         }
     }
 
-    // Rounded black button with yellow text; lighter while hovered,
-    // pushed down a little while pressed.
     private static class PlayButton extends JButton {
 
         private boolean hover = false;
@@ -127,7 +122,6 @@ public class MenuScreen extends JPanel {
             int w = getWidth() - 6;
             int h = getHeight() - 6;
 
-            // Orange shadow under the button
             g2.setColor(SHADOW);
             g2.fillRoundRect(5, 5, w, h, 28, 28);
 

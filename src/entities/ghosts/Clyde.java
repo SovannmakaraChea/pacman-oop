@@ -41,7 +41,6 @@ public class Clyde extends Ghost {
                 return new Point(pacmanX, pacmanY);
             }
 
-            // Too close, scatter to corner.
             return new Point(
                     scatterTarget.x * tileSize,
                     scatterTarget.y * tileSize

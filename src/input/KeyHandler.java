@@ -21,7 +21,6 @@ public class KeyHandler extends KeyAdapter {
     @Override
     public void keyPressed(KeyEvent e) {
 
-        // Any key starts the game; an arrow key also sets the first direction.
         onStart.run();
 
         switch (e.getKeyCode()) {

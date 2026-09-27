@@ -23,7 +23,6 @@ public class Inky extends Ghost {
         setMode(GhostMode.CHASE);
     }
 
-    // Inky's chase target depends on where Blinky is.
     public void setBlinky(Ghost blinky) {
         this.blinky = blinky;
     }

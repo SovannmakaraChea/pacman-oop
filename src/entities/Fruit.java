@@ -30,11 +30,10 @@ public class Fruit {
 
     public static List<Fruit> createCornerCherries(int tileSize) {
         List<Fruit> cherries = new ArrayList<>();
-        // Map is 19 x 21 tiles, so these are the open tiles in each corner
-        cherries.add(new Fruit(1, 1, tileSize));   // Top-Left
-        cherries.add(new Fruit(17, 1, tileSize));  // Top-Right
-        cherries.add(new Fruit(1, 19, tileSize));  // Bottom-Left
-        cherries.add(new Fruit(17, 19, tileSize)); // Bottom-Right
+        cherries.add(new Fruit(1, 1, tileSize));
+        cherries.add(new Fruit(17, 1, tileSize));
+        cherries.add(new Fruit(1, 19, tileSize));
+        cherries.add(new Fruit(17, 19, tileSize));
         return cherries;
     }
 
@@ -50,8 +49,6 @@ public class Fruit {
             g.drawImage(CHERRY_IMAGE, x, y, tileSize, tileSize, null);
             return;
         }
-
-        // Fallback if cherry.png can't be found: draw the cherry by hand
 
         int centerX = x + tileSize / 2;
         int centerY = y + tileSize / 2;

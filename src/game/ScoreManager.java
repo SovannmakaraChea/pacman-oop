@@ -7,7 +7,6 @@ public class ScoreManager {
 
     private int score = 0;
 
-    // Best score since the game was opened (not saved to a file).
     private int highScore = 0;
 
     public void addPoints(int points) {
@@ -18,12 +17,10 @@ public class ScoreManager {
         }
     }
 
-    // 200, 400, 800, 1600 for the 1st, 2nd, 3rd, 4th ghost eaten in one fright.
     public void addGhostPoints(int ghostsEatenThisFright) {
         addPoints(FIRST_GHOST_POINTS << (ghostsEatenThisFright - 1));
     }
 
-    // New game: score goes back to 0, the high score stays.
     public void reset() {
         score = 0;
     }

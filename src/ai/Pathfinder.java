@@ -28,9 +28,6 @@ public class Pathfinder {
         return findDirection(startX, startY, targetX, targetY, null);
     }
 
-    // Same as above, but the first step may not go in the "avoid"
-    // direction. Ghosts pass their reverse direction here so they
-    // never U-turn on the spot.
     public Direction findDirection(
             int startX,
             int startY,
@@ -63,12 +60,11 @@ public class Pathfinder {
         queue.add(start);
         visited.add(start);
 
-        // Same order as Direction.values(): UP, DOWN, LEFT, RIGHT
         int[][] directions = {
-                {0, -1},   // UP
-                {0, 1},    // DOWN
-                {-1, 0},   // LEFT
-                {1, 0}     // RIGHT
+                {0, -1},
+                {0, 1},
+                {-1, 0},
+                {1, 0}
         };
 
         while (!queue.isEmpty()) {
@@ -103,9 +99,6 @@ public class Pathfinder {
             }
         }
 
-        // Target may be off the board, inside a wall or unreachable
-        // (Pinky and Inky aim ahead of Pac-Man), so head for the
-        // reachable tile closest to it instead.
         if (!visited.contains(target)) {
             target = closestTo(visited, target);
         }

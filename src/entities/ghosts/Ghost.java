@@ -36,8 +36,6 @@ public abstract class Ghost {
 
     private final Random random = new Random();
 
-    // Same as the map's tile size, so a ghost fills exactly one
-    // corridor tile and its 32px image never overlaps a wall.
     private static final int SIZE = 32;
 
     private Pathfinder pathfinder;
@@ -153,8 +151,6 @@ public abstract class Ghost {
                 if (nextDirection != null) {
                     direction = nextDirection;
                 } else {
-                    // Already on the target: keep wandering instead of
-                    // stopping, otherwise the ghost bounces in place.
                     chooseRandomDirection(walls);
                 }
             }
@@ -165,7 +161,6 @@ public abstract class Ghost {
         wrapThroughTunnel(boardWidth);
     }
 
-    // Leaving through one side tunnel brings the ghost back in the other side.
     private void wrapThroughTunnel(int boardWidth) {
 
         if (x <= -SIZE) {
@@ -215,8 +210,6 @@ public abstract class Ghost {
         List<Direction> directions =
                 new ArrayList<>(Arrays.asList(Direction.values()));
 
-        // Try every direction once, in random order, with turning
-        // back as the last choice (only used at a dead end).
         Collections.shuffle(directions, random);
 
         Direction reverse = opposite(direction);
