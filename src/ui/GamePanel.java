@@ -10,11 +10,11 @@ public class GamePanel extends JPanel {
     private int boardWidth = columnCount * tilesize;
     private int boardHeight = rowCount * tilesize;
 
-    public GamePanel(Runnable onPlay) {
+    public GamePanel(JComponent screen) {
         setPreferredSize(new Dimension(boardWidth, boardHeight));
         setBackground(Color.YELLOW);
         setLayout(new GridBagLayout());
 
-        add(new MenuScreen(onPlay));
+        add(screen);
     }
 }

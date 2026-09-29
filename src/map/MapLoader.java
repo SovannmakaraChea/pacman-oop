@@ -20,6 +20,8 @@ import java.util.List;
 import ai.GhostMode;
 import audio.SoundManager;
 import audio.SoundManager.Sound;
+import game.Difficulty;
+import game.GameSettings;
 import game.ScoreManager;
 import input.KeyHandler;
 import utils.Direction;
@@ -76,6 +78,8 @@ public class MapLoader extends JPanel {
     GhostMode waveMode = GhostMode.SCATTER;
     int waveTicks = 0;
 
+    Difficulty difficulty = Difficulty.NORMAL;
+
     PacMan pacman;
 
     ScoreManager scoreManager = new ScoreManager();
@@ -84,6 +88,8 @@ public class MapLoader extends JPanel {
     boolean won = false;
 
     boolean waitingToStart = true;
+
+    Runnable onPause = () -> {};
 
     static final int READY_TICKS = 2000 / TICK_MS;
     int readyTicks = READY_TICKS;
@@ -171,7 +177,7 @@ public class MapLoader extends JPanel {
         }
 
         pacman = new PacMan(9 * tileSize, 15 * tileSize);
-        addKeyListener(new KeyHandler(pacman, this::startPlaying, this::restart));
+        addKeyListener(new KeyHandler(pacman, this::startPlaying, this::restart, this::pause));
 
         addMouseListener(new MouseAdapter() {
             @Override
@@ -247,7 +253,7 @@ public class MapLoader extends JPanel {
         for (Fruit fruit : fruits) {
             if (fruit.checkCollision(pacman.getBounds())) {
                 scoreManager.addPoints(ScoreManager.FRUIT_POINTS);
-                frightenGhosts(fruit.getScareDurationMs());
+                frightenGhosts(difficulty.getScareDurationMs());
                 sounds.play(Sound.FRUIT);
             }
         }
@@ -347,10 +353,15 @@ public class MapLoader extends JPanel {
             return;
         }
 
+        newGame();
+    }
+
+    public void newGame() {
+
         scoreManager.reset();
         gameOver = false;
         won = false;
-        waveMode = GhostMode.SCATTER;
+        waveMode = startingWave();
         waveTicks = 0;
 
         sounds.stopAll();
@@ -358,6 +369,17 @@ public class MapLoader extends JPanel {
         pacman.resetAll();
         resetPositions();
         waitingToStart = true;
+    }
+
+    void pause() {
+
+        stopGhosts();
+        sounds.stopAll();
+        onPause.run();
+    }
+
+    public void setOnPause(Runnable onPause) {
+        this.onPause = onPause;
     }
 
     void startPlaying() {
@@ -372,7 +394,15 @@ public class MapLoader extends JPanel {
         return new Ghost[]{blinky, pinky, inky, clyde};
     }
 
+    GhostMode startingWave() {
+        return difficulty.isChaseOnly() ? GhostMode.CHASE : GhostMode.SCATTER;
+    }
+
     void updateWave() {
+
+        if (difficulty.isChaseOnly()) {
+            return;
+        }
 
         waveTicks++;
 
@@ -527,7 +557,7 @@ public class MapLoader extends JPanel {
         g.drawString("SCORE: " + scoreManager.getScore(), 10, boardHeight + 22);
         drawCentered(g, "HIGH: " + scoreManager.getHighScore(), boardHeight + 22);
 
-        g.setColor(Color.YELLOW);
+        g.setColor(pacman.getSkin().getColor());
         for (int i = 0; i < pacman.getLives(); i++) {
             g.fillArc(boardWidth - 30 - i * 26, boardHeight + 6, 20, 20, 225, 270);
         }
@@ -608,6 +638,23 @@ public class MapLoader extends JPanel {
 
         if (gameTimer != null) {
             gameTimer.stop();
+        }
+    }
+
+    // Called when PLAY is pressed, while everyone is still on their start tile.
+    public void applySettings(GameSettings settings) {
+
+        difficulty = settings.getDifficulty();
+
+        pacman.setSkin(settings.getSkin());
+        pacman.setSpeed(difficulty.getPacmanSpeed());
+
+        waveMode = startingWave();
+        waveTicks = 0;
+
+        for (Ghost ghost : ghosts()) {
+            ghost.setSpeed(difficulty.getGhostSpeed());
+            ghost.setMode(waveMode);
         }
     }
 

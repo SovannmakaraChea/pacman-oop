@@ -1,5 +1,9 @@
+import game.GameSettings;
 import map.MapLoader;
 import ui.GamePanel;
+import ui.MenuScreen;
+import ui.PauseScreen;
+import ui.SettingsScreen;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -13,14 +17,46 @@ public class Main {
         CardLayout cards = new CardLayout();
         JPanel screens = new JPanel(cards);
 
+        GameSettings settings = new GameSettings();
         MapLoader map = new MapLoader();
-        GamePanel menu = new GamePanel(() -> {
+
+        Runnable showGame = () -> {
             cards.show(screens, "map");
             map.startGhosts();
             map.requestFocusInWindow();
-        });
+        };
+
+        GamePanel menu = new GamePanel(new MenuScreen(
+                () -> {
+                    map.applySettings(settings);
+                    showGame.run();
+                },
+                () -> cards.show(screens, "settings")
+        ));
+
+        GamePanel settingsScreen = new GamePanel(new SettingsScreen(
+                settings,
+                () -> cards.show(screens, "menu")
+        ));
+
+        GamePanel pauseScreen = new GamePanel(new PauseScreen(
+                showGame,
+                () -> {
+                    map.newGame();
+                    showGame.run();
+                },
+                () -> {
+                    map.newGame();
+                    cards.show(screens, "menu");
+                    map.playMenuMusic();
+                }
+        ));
+
+        map.setOnPause(() -> cards.show(screens, "pause"));
 
         screens.add(menu, "menu");
+        screens.add(settingsScreen, "settings");
+        screens.add(pauseScreen, "pause");
         screens.add(map, "map");
 
         frame.add(screens);

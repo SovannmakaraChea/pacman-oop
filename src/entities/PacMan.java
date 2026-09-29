@@ -1,9 +1,9 @@
 package entities;
 
+import game.Skin;
 import utils.Direction;
 
 import javax.swing.ImageIcon;
-import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Image;
 import java.awt.Rectangle;
@@ -17,7 +17,7 @@ public class PacMan {
     private final int startX;
     private final int startY;
 
-    private final int speed = 4;
+    private int speed = 4;
 
     private static final int SIZE = 32;
     private static final int START_LIVES = 3;
@@ -28,16 +28,30 @@ public class PacMan {
 
     private int lives = START_LIVES;
 
-    private final Image upImage = loadImage("/images/pacman/pacmanUp.png");
-    private final Image downImage = loadImage("/images/pacman/pacmanDown.png");
-    private final Image leftImage = loadImage("/images/pacman/pacmanLeft.png");
-    private final Image rightImage = loadImage("/images/pacman/pacmanRight.png");
+    private Skin skin;
+    private Image upImage;
+    private Image downImage;
+    private Image leftImage;
+    private Image rightImage;
 
     public PacMan(int x, int y) {
         this.x = x;
         this.y = y;
         this.startX = x;
         this.startY = y;
+        setSkin(Skin.YELLOW);
+    }
+
+    public void setSkin(Skin skin) {
+        this.skin = skin;
+        upImage = loadImage(skin.imagePath("Up"));
+        downImage = loadImage(skin.imagePath("Down"));
+        leftImage = loadImage(skin.imagePath("Left"));
+        rightImage = loadImage(skin.imagePath("Right"));
+    }
+
+    public void setSpeed(int speed) {
+        this.speed = speed;
     }
 
     public void update(String[] tileMap, int tileSize) {
@@ -60,18 +74,19 @@ public class PacMan {
         }
 
         if (moving) {
+            int step = Math.min(speed, distanceToNextTile(tileSize));
             switch (direction) {
                 case UP:
-                    y -= speed;
+                    y -= step;
                     break;
                 case DOWN:
-                    y += speed;
+                    y += step;
                     break;
                 case LEFT:
-                    x -= speed;
+                    x -= step;
                     break;
                 case RIGHT:
-                    x += speed;
+                    x += step;
                     break;
             }
         }
@@ -81,6 +96,27 @@ public class PacMan {
         } else if (x >= boardWidth) {
             x = -SIZE;
         }
+    }
+
+    // Pac-Man can only turn when he sits exactly on a tile, so a speed that
+    // does not divide the tile size (like 6) takes a shorter last step
+    // instead of jumping past the tile edge.
+    private int distanceToNextTile(int tileSize) {
+        int distance;
+        switch (direction) {
+            case UP:
+                distance = Math.floorMod(y, tileSize);
+                break;
+            case DOWN:
+                distance = tileSize - Math.floorMod(y, tileSize);
+                break;
+            case LEFT:
+                distance = Math.floorMod(x, tileSize);
+                break;
+            default:
+                distance = tileSize - Math.floorMod(x, tileSize);
+        }
+        return distance == 0 ? tileSize : distance;
     }
 
     private boolean canMove(Direction dir, String[] tileMap, int tileSize) {
@@ -164,7 +200,7 @@ public class PacMan {
             default:
                 startAngle = 225;
         }
-        g.setColor(Color.YELLOW);
+        g.setColor(skin.getColor());
         g.fillArc(x, y, SIZE, SIZE, startAngle, 270);
     }
 
@@ -204,6 +240,10 @@ public class PacMan {
 
     public Direction getDirection() {
         return direction;
+    }
+
+    public Skin getSkin() {
+        return skin;
     }
 
     public int getLives() {

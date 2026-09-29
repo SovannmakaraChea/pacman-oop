@@ -11,15 +11,24 @@ public class KeyHandler extends KeyAdapter {
     private final PacMan pacman;
     private final Runnable onStart;
     private final Runnable onRestart;
+    private final Runnable onPause;
 
-    public KeyHandler(PacMan pacman, Runnable onStart, Runnable onRestart) {
+    public KeyHandler(PacMan pacman, Runnable onStart, Runnable onRestart, Runnable onPause) {
         this.pacman = pacman;
         this.onStart = onStart;
         this.onRestart = onRestart;
+        this.onPause = onPause;
     }
 
     @Override
     public void keyPressed(KeyEvent e) {
+
+        if (e.getKeyCode() == KeyEvent.VK_ESCAPE || e.getKeyCode() == KeyEvent.VK_P) {
+            onPause.run();
+            // stop this same ESC press from also triggering the pause screen's resume
+            e.consume();
+            return;
+        }
 
         onStart.run();
 

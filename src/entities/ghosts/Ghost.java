@@ -316,6 +316,11 @@ public abstract class Ghost {
         return speed;
     }
 
+    // Must divide the tile size (2, 4, 8...) so the ghost still lands on tiles.
+    public void setSpeed(int speed) {
+        this.speed = speed;
+    }
+
     public String getName() {
         return name;
     }
