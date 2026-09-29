@@ -2,7 +2,7 @@ package game;
 
 public class ScoreManager {
 
-    public static final int FRUIT_POINTS = 50;
+    public static final int FRUIT_POINTS = 200;
     private static final int FIRST_GHOST_POINTS = 200;
 
     private int score = 0;
