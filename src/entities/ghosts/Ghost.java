@@ -23,6 +23,7 @@ public abstract class Ghost {
     protected final int startY;
 
     protected int speed;
+    protected int frightenedSpeed;
 
     protected final String name;
 
@@ -56,6 +57,7 @@ public abstract class Ghost {
         this.startY = y;
 
         this.speed = speed;
+        this.frightenedSpeed = speed;
         this.name = name;
 
         this.direction = Direction.UP;
@@ -67,24 +69,55 @@ public abstract class Ghost {
 
     public void move() {
 
+        int step = Math.min(currentSpeed(), distanceToNextTile());
+
         switch (direction) {
 
             case UP:
-                y -= speed;
+                y -= step;
                 break;
 
             case DOWN:
-                y += speed;
+                y += step;
                 break;
 
             case LEFT:
-                x -= speed;
+                x -= step;
                 break;
 
             case RIGHT:
-                x += speed;
+                x += step;
                 break;
         }
+    }
+
+    private int currentSpeed() {
+        return mode == GhostMode.FRIGHTENED ? frightenedSpeed : speed;
+    }
+
+    // The speed can change mid-tile (e.g. 8 -> 6 when scared on HARD), so the last
+    // step before a tile edge is shortened to land exactly on it. Otherwise
+    // the ghost drifts off the grid and can never turn again.
+    // A ghost is one tile big, so SIZE is also the tile size.
+    private int distanceToNextTile() {
+
+        int distance;
+
+        switch (direction) {
+            case UP:
+                distance = Math.floorMod(y, SIZE);
+                break;
+            case DOWN:
+                distance = SIZE - Math.floorMod(y, SIZE);
+                break;
+            case LEFT:
+                distance = Math.floorMod(x, SIZE);
+                break;
+            default:
+                distance = SIZE - Math.floorMod(x, SIZE);
+        }
+
+        return distance == 0 ? SIZE : distance;
     }
 
     public void move(Set<Rectangle> walls) {
@@ -226,19 +259,19 @@ public abstract class Ghost {
             switch (candidate) {
 
                 case UP:
-                    testY -= speed;
+                    testY -= currentSpeed();
                     break;
 
                 case DOWN:
-                    testY += speed;
+                    testY += currentSpeed();
                     break;
 
                 case LEFT:
-                    testX -= speed;
+                    testX -= currentSpeed();
                     break;
 
                 case RIGHT:
-                    testX += speed;
+                    testX += currentSpeed();
                     break;
             }
 
@@ -316,9 +349,18 @@ public abstract class Ghost {
         return speed;
     }
 
-    // Must divide the tile size (2, 4, 8...) so the ghost still lands on tiles.
     public void setSpeed(int speed) {
         this.speed = speed;
+    }
+
+    public void setFrightenedSpeed(int frightenedSpeed) {
+        this.frightenedSpeed = frightenedSpeed;
+    }
+
+    // The pathfinder remembers the map it was built for, so a new level
+    // needs a fresh one.
+    public void resetPathfinder() {
+        pathfinder = null;
     }
 
     public String getName() {

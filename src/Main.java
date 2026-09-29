@@ -1,6 +1,7 @@
 import game.GameSettings;
 import map.MapLoader;
 import ui.GamePanel;
+import ui.LevelScreen;
 import ui.MenuScreen;
 import ui.PauseScreen;
 import ui.SettingsScreen;
@@ -26,12 +27,22 @@ public class Main {
             map.requestFocusInWindow();
         };
 
+        Runnable playSelectedLevel = () -> {
+            map.applySettings(settings);
+            showGame.run();
+        };
+
         GamePanel menu = new GamePanel(new MenuScreen(
-                () -> {
-                    map.applySettings(settings);
-                    showGame.run();
-                },
-                () -> cards.show(screens, "settings")
+                playSelectedLevel,
+                () -> cards.show(screens, "levels"),
+                () -> cards.show(screens, "settings"),
+                () -> System.exit(0)
+        ));
+
+        GamePanel levelScreen = new GamePanel(new LevelScreen(
+                settings,
+                playSelectedLevel,
+                () -> cards.show(screens, "menu")
         ));
 
         GamePanel settingsScreen = new GamePanel(new SettingsScreen(
@@ -55,6 +66,7 @@ public class Main {
         map.setOnPause(() -> cards.show(screens, "pause"));
 
         screens.add(menu, "menu");
+        screens.add(levelScreen, "levels");
         screens.add(settingsScreen, "settings");
         screens.add(pauseScreen, "pause");
         screens.add(map, "map");

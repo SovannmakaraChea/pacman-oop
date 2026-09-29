@@ -94,34 +94,18 @@ public class MapLoader extends JPanel {
     static final int READY_TICKS = 2000 / TICK_MS;
     int readyTicks = READY_TICKS;
 
-    int frightenedTicks = 0;
+    // The scare is timed on the real clock, not by counting ticks: on Windows
+    // a 16 ms Timer often fires only every ~31 ms, which made a 6 s scare
+    // last about 11 s. Time spent paused is not counted.
+    long frightenedNanosLeft = 0;
+    long lastTickNanos = 0;
+    long tickNanos = 0;
     int ghostsEatenThisFright = 0;
 
     static final int HUD_HEIGHT = 32;
 
-    String[] tileMap = {
-            "XXXXXXXXXXXXXXXXXXX",
-            "X        X        X",
-            "X XX XXX X XXX XX X",
-            "X                 X",
-            "X XX X XXXXX X XX X",
-            "X    X       X    X",
-            "XXXX XXXX XXXX XXXX",
-            "OOOX X       X XOOO",
-            "XXXX X XX XX X XXXX",
-            "O                 O",
-            "XXXX X XXXXX X XXXX",
-            "OOOX X       X XOOO",
-            "XXXX X XXXXX X XXXX",
-            "X        X        X",
-            "X XX XXX X XXX XX X",
-            "X  X           X  X",
-            "XX X X XXXXX X X XX",
-            "X    X   X   X    X",
-            "X XXXXXX X XXXXXX X",
-            "X                 X",
-            "XXXXXXXXXXXXXXXXXXX"
-    };
+    int level = 1;
+    String[] tileMap = GameMaps.forLevel(level);
 
     public MapLoader() {
 
@@ -187,6 +171,9 @@ public class MapLoader extends JPanel {
         });
 
         gameTimer = new Timer(TICK_MS, e -> {
+            long now = System.nanoTime();
+            tickNanos = now - lastTickNanos;
+            lastTickNanos = now;
             updateGame();
             repaint();
         });
@@ -207,7 +194,7 @@ public class MapLoader extends JPanel {
         eatPellets();
         eatFruit();
 
-        if (frightenedTicks > 0) {
+        if (frightenedNanosLeft > 0) {
             updateFrightened();
         } else {
             updateWave();
@@ -270,7 +257,7 @@ public class MapLoader extends JPanel {
 
     void frightenGhosts(int durationMs) {
 
-        frightenedTicks = durationMs / TICK_MS;
+        frightenedNanosLeft = durationMs * 1_000_000L;
         ghostsEatenThisFright = 0;
 
         for (Ghost ghost : ghosts()) {
@@ -282,9 +269,9 @@ public class MapLoader extends JPanel {
 
     void updateFrightened() {
 
-        frightenedTicks--;
+        frightenedNanosLeft -= tickNanos;
 
-        if (frightenedTicks > 0) {
+        if (frightenedNanosLeft > 0) {
             return;
         }
 
@@ -343,7 +330,7 @@ public class MapLoader extends JPanel {
             ghost.setMode(waveMode);
         }
 
-        frightenedTicks = 0;
+        frightenedNanosLeft = 0;
         readyTicks = READY_TICKS;
     }
 
@@ -571,7 +558,7 @@ public class MapLoader extends JPanel {
         } else if (won) {
             message = "YOU WIN!";
         } else if (readyTicks > 0) {
-            message = "READY!";
+            message = "LEVEL " + level + "  READY!";
         }
 
         if (message == null) {
@@ -646,6 +633,10 @@ public class MapLoader extends JPanel {
 
         difficulty = settings.getDifficulty();
 
+        level = settings.getLevel();
+        tileMap = GameMaps.forLevel(level);
+        loadMap();
+
         pacman.setSkin(settings.getSkin());
         pacman.setSpeed(difficulty.getPacmanSpeed());
 
@@ -654,6 +645,8 @@ public class MapLoader extends JPanel {
 
         for (Ghost ghost : ghosts()) {
             ghost.setSpeed(difficulty.getGhostSpeed());
+            ghost.setFrightenedSpeed(difficulty.getGhostScaredSpeed());
+            ghost.resetPathfinder();
             ghost.setMode(waveMode);
         }
     }
@@ -667,6 +660,7 @@ public class MapLoader extends JPanel {
         if (gameTimer != null
                 && !gameTimer.isRunning()) {
 
+            lastTickNanos = System.nanoTime();
             gameTimer.start();
         }
     }

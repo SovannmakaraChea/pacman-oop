@@ -4,6 +4,7 @@ public class GameSettings {
 
     private Difficulty difficulty = Difficulty.NORMAL;
     private Skin skin = Skin.YELLOW;
+    private int level = 1;
 
     public Difficulty getDifficulty() {
         return difficulty;
@@ -19,5 +20,13 @@ public class GameSettings {
 
     public void setSkin(Skin skin) {
         this.skin = skin;
+    }
+
+    public int getLevel() {
+        return level;
+    }
+
+    public void setLevel(int level) {
+        this.level = level;
     }
 }

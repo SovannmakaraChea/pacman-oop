@@ -51,7 +51,7 @@ class MenuButton extends JButton {
         g2.setColor(MenuScreen.SHADOW);
         g2.fillRoundRect(5, 5, w, h, 28, 28);
 
-        g2.setColor(hover ? new Color(55, 55, 55) : MenuScreen.INK);
+        g2.setColor(hover && isEnabled() ? new Color(55, 55, 55) : MenuScreen.INK);
         g2.fillRoundRect(push, push, w, h, 28, 28);
 
         g2.setFont(getFont());
